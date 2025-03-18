@@ -1,22 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Alert, View, Modal, TouchableOpacity } from 'react-native';
+import { StyleSheet, Alert, View, Modal, TouchableOpacity, TextInput } from 'react-native';
 import * as Battery from 'expo-battery';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { Image, TextInput } from 'react-native';
+import { Image } from 'react-native';
 import { GestureHandlerRootView, PanGestureHandler } from 'react-native-gesture-handler';
 
 export default function HomeScreen() {
-  const [batteryLevel, setBatteryLevel] = useState(null);
-  const [temperature, setTemperature] = useState(25); // Simulated temperature
-  const [isCharging, setIsCharging] = useState(false);
-  const [tempLimit, setTempLimit] = useState('30'); // Default limit in Celsius
-  const [unit, setUnit] = useState('Celsius'); // Celsius or Fahrenheit
-  const [alarmActive, setAlarmActive] = useState(false);
-  const [swipeOffset, setSwipeOffset] = useState(0);
+  const [batteryLevel, setBatteryLevel] = useState<number | null>(null); // Allow number or null
+  const [temperature, setTemperature] = useState<number>(25); // Temperature is always a number
+  const [isCharging, setIsCharging] = useState<boolean>(false);
+  const [tempLimit, setTempLimit] = useState<string>('30'); // String for TextInput
+  const [unit, setUnit] = useState<'Celsius' | 'Fahrenheit'>('Celsius'); // Literal union type
+  const [alarmActive, setAlarmActive] = useState<boolean>(false);
+  const [swipeOffset, setSwipeOffset] = useState<number>(0);
 
-  // Monitor charging status and battery level
   useEffect(() => {
     const checkCharging = async () => {
       const state = await Battery.getBatteryStateAsync();
@@ -31,7 +30,7 @@ export default function HomeScreen() {
     });
     const chargingSub = Battery.addBatteryStateListener(({ batteryState }) => {
       setIsCharging(batteryState === Battery.BatteryState.CHARGING);
-      if (batteryState !== Battery.BatteryState.CHARGING) setAlarmActive(false); // Stop alarm if unplugged
+      if (batteryState !== Battery.BatteryState.CHARGING) setAlarmActive(false);
     });
 
     return () => {
@@ -40,15 +39,14 @@ export default function HomeScreen() {
     };
   }, []);
 
-  // Simulate temperature when charging
   useEffect(() => {
     if (!isCharging) {
-      setTemperature(25); // Reset to ambient when not charging
+      setTemperature(25);
       return;
     }
     const interval = setInterval(() => {
       setTemperature(prev => {
-        const newTemp = prev + (Math.random() - 0.2); // Gradual increase while charging
+        const newTemp = prev + (Math.random() - 0.2);
         const limit = parseFloat(tempLimit);
         const tempInCelsius = unit === 'Fahrenheit' ? (newTemp - 32) * 5 / 9 : newTemp;
         const limitInCelsius = unit === 'Fahrenheit' ? (limit - 32) * 5 / 9 : limit;
@@ -61,11 +59,10 @@ export default function HomeScreen() {
     return () => clearInterval(interval);
   }, [isCharging, tempLimit, unit]);
 
-  // Swipe handler to dismiss alarm
-  const onSwipe = (event) => {
+  const onSwipe = (event: any) => {
     const { translationX } = event.nativeEvent;
     setSwipeOffset(translationX);
-    if (translationX > 100) { // Swipe right > 100px to dismiss
+    if (translationX > 100) {
       setAlarmActive(false);
       setSwipeOffset(0);
     }
@@ -73,7 +70,7 @@ export default function HomeScreen() {
 
   const toggleUnit = () => {
     setUnit(unit === 'Celsius' ? 'Fahrenheit' : 'Celsius');
-    setTempLimit(unit === 'Celsius' ? '86' : '30'); // Default conversions
+    setTempLimit(unit === 'Celsius' ? '86' : '30');
   };
 
   const tempDisplay = unit === 'Fahrenheit' ? (temperature * 9 / 5 + 32).toFixed(1) : temperature.toFixed(1);
@@ -119,7 +116,6 @@ export default function HomeScreen() {
         </ThemedView>
       </ParallaxScrollView>
 
-      {/* Full-Screen Alarm Modal */}
       <Modal visible={alarmActive && isCharging} animationType="slide" transparent={false}>
         <ThemedView style={styles.alarmContainer}>
           <ThemedText type="title" style={styles.alarmText}>
@@ -129,9 +125,9 @@ export default function HomeScreen() {
             Current Temperature: {tempDisplay}°{unit === 'Celsius' ? 'C' : 'F'}
           </ThemedText>
           <PanGestureHandler onGestureEvent={onSwipe}>
-            <ThemedView style={[styles.swipeArea, { transform: [{ translateX: swipeOffset }] }]}>
+            <View style={[styles.swipeArea, { transform: [{ translateX: swipeOffset }] }]}>
               <ThemedText style={styles.swipeText}>Swipe Right to Dismiss</ThemedText>
-            </ThemedView>
+            </View>
           </PanGestureHandler>
           <ThemedText style={styles.alarmSubText}>Or disconnect charger to stop</ThemedText>
         </ThemedView>
