@@ -15,6 +15,8 @@ export default function HomeScreen() {
   const [unit, setUnit] = useState<'Celsius' | 'Fahrenheit'>('Celsius');
   const [alarmActive, setAlarmActive] = useState<boolean>(false);
   const [swipeOffset, setSwipeOffset] = useState<number>(0);
+  const [monitoringPaused, setMonitoringPaused] = useState<boolean>(false);
+  const [lastAlarmTemp, setLastAlarmTemp] = useState<number | null>(null);
 
   useEffect(() => {
     const checkCharging = async () => {
@@ -42,6 +44,15 @@ export default function HomeScreen() {
   useEffect(() => {
     if (!isCharging) {
       setTemperature(25);
+      setMonitoringPaused(false);
+      setLastAlarmTemp(null);
+      return;
+    }
+    if (monitoringPaused) {
+      if (lastAlarmTemp !== null && temperature >= lastAlarmTemp + 1) {
+        setMonitoringPaused(false);
+        setAlarmActive(true);
+      }
       return;
     }
     const interval = setInterval(() => {
@@ -52,21 +63,24 @@ export default function HomeScreen() {
         const limitInCelsius = unit === 'Fahrenheit' ? (limit - 32) * 5 / 9 : limit;
         if (tempInCelsius > limitInCelsius && !alarmActive) {
           setAlarmActive(true);
+          setLastAlarmTemp(newTemp);
         }
         return newTemp;
       });
     }, 2000);
     return () => clearInterval(interval);
-  }, [isCharging, tempLimit, unit]);
+  }, [isCharging, tempLimit, unit, monitoringPaused, lastAlarmTemp, temperature]);
 
   const onSwipeHandler = (event: any) => {
     const { translationX, state } = event.nativeEvent;
     setSwipeOffset(translationX);
     if (state === State.END) {
       if (translationX > 100) {
-        setAlarmActive(false); // Dismiss alarm on successful swipe
+        setAlarmActive(false);
+        setMonitoringPaused(true);
+        setLastAlarmTemp(temperature);
       }
-      setSwipeOffset(0); // Reset position
+      setSwipeOffset(0);
     }
   };
 
@@ -79,7 +93,6 @@ export default function HomeScreen() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      {/* Main Content */}
       <ParallaxScrollView
         headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
         headerImage={
@@ -103,7 +116,7 @@ export default function HomeScreen() {
             </>
           )}
           <ThemedView style={styles.inputContainer}>
-            <ThemedText>Set Limit ({unit}): </ThemedText>
+            <ThemedText style={styles.limitLabel}>Set Temperature Limit in {unit}:</ThemedText>
             <TextInput
               style={styles.input}
               value={tempLimit}
@@ -118,29 +131,28 @@ export default function HomeScreen() {
         </ThemedView>
       </ParallaxScrollView>
 
-      {/* Alarm Overlay */}
       {alarmActive && isCharging && (
-  <View style={styles.alarmOverlay}>
-    <ThemedText type="title" style={styles.alarmText}>
-      Battery Temperature Limit Reached!
-    </ThemedText>
-    <ThemedText style={styles.alarmSubText}>
-      Current Temperature: {tempDisplay}°{unit === 'Celsius' ? 'C' : 'F'}
-    </ThemedText>
-    <ThemedText style={styles.alarmSubText}>
-      UNPLUG THE CHARGER NOW
-    </ThemedText>
-    <PanGestureHandler
-      onGestureEvent={onSwipeHandler}
-      onHandlerStateChange={onSwipeHandler}
-    >
-      <View style={[styles.swipeArea, { transform: [{ translateX: swipeOffset }] }]}>
-        <ThemedText style={styles.swipeText}>Swipe Right to Dismiss</ThemedText>
-      </View>
-    </PanGestureHandler>
-    <ThemedText style={styles.alarmSubText}>Or disconnect charger to stop</ThemedText>
-  </View>
-)}
+        <View style={styles.alarmOverlay}>
+          <ThemedText type="title" style={styles.alarmText}>
+            Battery Temperature Limit Reached!
+          </ThemedText>
+          <ThemedText style={styles.alarmSubText}>
+            Current Temperature: {tempDisplay}°{unit === 'Celsius' ? 'C' : 'F'}
+          </ThemedText>
+          <ThemedText style={styles.alarmSubText}>
+            UNPLUG THE CHARGER NOW
+          </ThemedText>
+          <PanGestureHandler
+            onGestureEvent={onSwipeHandler}
+            onHandlerStateChange={onSwipeHandler}
+          >
+            <View style={[styles.swipeArea, { transform: [{ translateX: swipeOffset }] }]}>
+              <ThemedText style={styles.swipeText}>Swipe Right to Dismiss</ThemedText>
+            </View>
+          </PanGestureHandler>
+          <ThemedText style={styles.alarmSubText}>Or disconnect charger to stop</ThemedText>
+        </View>
+      )}
     </GestureHandlerRootView>
   );
 }
@@ -159,8 +171,16 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center', // Center the row
+    flexWrap: 'wrap', // Allow wrapping if needed
     gap: 8,
     marginTop: 16,
+    width: '100%', // Ensure it fits container width
+  },
+  limitLabel: {
+    fontSize: 16, // Slightly smaller to fit
+    flexShrink: 1, // Allow text to shrink if needed
+    textAlign: 'right', // Align text for better flow
   },
   input: {
     borderWidth: 1,
@@ -208,7 +228,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     width: 200,
     alignItems: 'center',
-    alignSelf: 'center', // Center the swipe area
+    alignSelf: 'center',
   },
   swipeText: {
     fontSize: 16,
