@@ -125,15 +125,6 @@ export default function HomeScreen() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemedView style={[styles.container, isDarkMode ? styles.darkContainer : styles.lightContainer]}>
         <View style={styles.header}>
-          <ThemedText
-            type="title"
-            style={[
-              styles.title,
-              { color: isDarkMode ? '#ffffff' : '#000000' },
-            ]}
-          >
-            Battery Temperature Alarm
-          </ThemedText>
           <TouchableOpacity
             onPress={toggleTheme}
             style={[styles.themeToggle, isDarkMode ? styles.darkButton : styles.lightButton]}
@@ -147,6 +138,15 @@ export default function HomeScreen() {
               {isDarkMode ? 'Light' : 'Dark'} Mode
             </ThemedText>
           </TouchableOpacity>
+          <ThemedText
+            type="title"
+            style={[
+              styles.title,
+              { color: isDarkMode ? '#ffffff' : '#000000' },
+            ]}
+          >
+            Battery Temperature Alarm
+          </ThemedText>
         </View>
         <View style={styles.mainContent}>
           <ThemedText
@@ -230,7 +230,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 60, // Increased padding to avoid status bar overlap
+    paddingTop: 60, // Ensure content stays below status bar
   },
   lightContainer: {
     backgroundColor: '#ffffff', // White background for light mode
@@ -245,8 +245,7 @@ const styles = StyleSheet.create({
     color: '#ffffff', // White text for black background
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: 'column',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -254,15 +253,18 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
+    marginTop: 10, // Space below toggle
   },
   themeToggle: {
-    padding: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     borderRadius: 20,
-    elevation: 8,
+    elevation: 10, // Skeuomorphic elevation
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    backgroundColor: '#f0f0f0', // Subtle gradient base
   },
   themeText: {
     fontSize: 14,
@@ -270,60 +272,62 @@ const styles = StyleSheet.create({
   mainContent: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center', // Center vertically for aesthetic balance
+    justifyContent: 'center', // Center vertically
+    paddingVertical: 20, // Added vertical padding to ensure space
     paddingHorizontal: 20,
   },
   percentage: {
-    fontSize: 48,
-    marginBottom: 15, // Reduced for tighter spacing
+    fontSize: 25, // Further reduced to prevent cutoff
+    marginBottom: 15,
+    maxWidth: 200, // Prevent overflow
   },
   tempText: {
     fontSize: 24,
-    marginBottom: 30, // Increased for better separation
+    marginBottom: 30,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10, // Increased gap for aesthetic spacing
+    gap: 10,
   },
   limitLabel: {
     fontSize: 16,
     flexShrink: 1,
     textAlign: 'right',
-    minWidth: 140, // Adjusted for better fit
+    minWidth: 140,
   },
   input: {
-    borderWidth: 1,
+    borderWidth: 2,
     padding: 12,
-    width: 80, // Reduced width for balance
+    width: 80,
     textAlign: 'center',
     borderRadius: 20,
-    elevation: 8,
+    elevation: 10, // Skeuomorphic elevation
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    backgroundColor: '#f0f0f0', // Subtle gradient base
   },
   lightInput: {
     borderColor: '#000000',
-    backgroundColor: '#ffffff',
     color: '#000000',
   },
   darkInput: {
     borderColor: '#ffffff',
-    backgroundColor: '#000000',
     color: '#ffffff',
   },
   unitButton: {
     paddingVertical: 12,
     paddingHorizontal: 15,
     borderRadius: 20,
-    elevation: 8,
+    elevation: 10, // Skeuomorphic elevation
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    backgroundColor: '#f0f0f0', // Subtle gradient base
   },
   lightButton: {
     backgroundColor: '#ffffff',
@@ -367,16 +371,16 @@ const styles = StyleSheet.create({
   swipeButton: {
     width: 60,
     height: 60,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f0f0f0', // Subtle gradient base
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',
-    elevation: 8,
+    elevation: 20, // Skeuomorphic elevation
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
   },
   swipeText: {
     fontSize: 24,
