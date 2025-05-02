@@ -4,7 +4,7 @@ import undetected_chromedriver as uc
 from plyer import notification
 
 # URL to monitor
-BOOKMYSHOW_URL = "https://in.bookmyshow.com/movies/kochi/sinners/ET00413379"  # Replace with movie page
+BOOKMYSHOW_URL = "https://in.bookmyshow.com/movies/kochi/mission-impossible-the-final-reckoning/ET00419530"  # Replace with movie page
 
 def setup_stealth_driver():
     options = uc.ChromeOptions()
@@ -36,7 +36,7 @@ def send_notification():
 def check_page_for_text(driver):
     try:
         driver.get(BOOKMYSHOW_URL)
-        time.sleep(5)  # Let page fully load
+        time.sleep(8)  # Let page fully load
 
         page_content = driver.page_source.lower()
 
