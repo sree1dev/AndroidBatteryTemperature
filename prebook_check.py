@@ -2,14 +2,13 @@ import time
 import random
 import undetected_chromedriver as uc
 from plyer import notification
+import traceback
+import sys
 
-# URL to monitor
-BOOKMYSHOW_URL = "https://in.bookmyshow.com/movies/kochi/mission-impossible-the-final-reckoning/ET00419530"  # Replace with movie page
+BOOKMYSHOW_URL = "https://in.bookmyshow.com/movies/kochi/mission-impossible-the-final-reckoning/ET00419530"
 
 def setup_stealth_driver():
     options = uc.ChromeOptions()
-
-    # Remove headless to avoid detection
     options.headless = False
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
@@ -18,79 +17,90 @@ def setup_stealth_driver():
     options.add_argument("--disable-extensions")
     options.add_argument("--disable-gpu")
     options.add_argument("--start-maximized")
-
-    # Spoofing User-Agent (optional)
     options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
-
-    # Initialize driver with options
-    driver = uc.Chrome(options=options)
-    return driver
+    return uc.Chrome(options=options)
 
 def send_notification():
-    notification.notify(
-        title="BOOK TICKET NOW",
-        message="🎬 'In cinemas' found on BookMyShow page.",
-        timeout=10
-    )
+    try:
+        notification.notify(
+            title="BOOK TICKET NOW",
+            message="🎬 'In cinemas' found on BookMyShow page.",
+            timeout=10
+        )
+    except Exception:
+        handle_global_exception(sys.exc_info())
+
+def send_error_notification():
+    try:
+        notification.notify(
+            title="❌ ERROR: PLEASE CHECK",
+            message="Something went wrong. See terminal for details.",
+            timeout=10
+        )
+    except:
+        pass  # Avoid recursive notification failure
 
 def check_page_for_text(driver):
     try:
         driver.get(BOOKMYSHOW_URL)
-        time.sleep(8)  # Let page fully load
-
+        time.sleep(8)
         page_content = driver.page_source.lower()
-
-        # List of phrases to check for
         check_phrases = [
-            "in cinemas",
-            "book tickets",
-            "pre-book tickets",
-            "pre book tickets",
-            "prebook tickets"
+            "in cinemas", "book tickets", "pre-book tickets",
+            "pre book tickets", "prebook tickets", "book ticket",
+            "pre-book ticket", "pre book ticket", "prebook ticket"
         ]
-
-        # Check if any of the phrases are found in the page content
         for phrase in check_phrases:
             if phrase in page_content:
                 print(f"🔔 '{phrase}' found!")
-                return True  # Condition met
-        
+                return True
         print("No relevant phrase found. Will check again.")
-        return False  # Condition not met
-    except Exception as e:
-        print("Error checking page:", e)
-        return False  # In case of an error, return False
+        return False
+    except Exception:
+        handle_global_exception(sys.exc_info())
+        return False
 
 def main():
-    driver = setup_stealth_driver()
-    in_cinemas_found = False  # Flag to track if any of the phrases are found
+    try:
+        driver = setup_stealth_driver()
+    except Exception:
+        handle_global_exception(sys.exc_info())
+        return
 
+    in_cinemas_found = False
     try:
         while True:
-            # If any phrase has been found, send notifications continuously
             if in_cinemas_found:
-                print("🎬 Relevant phrase found. Sending notifications every 7 seconds.")
-                # Keep sending notifications every 7 seconds in a non-blocking way
+                print("🎬 Phrase found. Sending notifications every 7 seconds.")
                 while in_cinemas_found:
-                    send_notification()
-                    time.sleep(7)  # 7-second interval notifications
-
+                    try:
+                        send_notification()
+                        time.sleep(7)
+                    except Exception:
+                        handle_global_exception(sys.exc_info())
             else:
-                # Check if any relevant phrase is found
                 in_cinemas_found = check_page_for_text(driver)
-
                 if in_cinemas_found:
-                    print("🎬 Relevant phrase found. Notifications will now run indefinitely.")
-                    # Do not proceed to sleep or further checks after this
-
-                # Sleep for a random duration before checking again, only if no relevant phrase is found
-                if not in_cinemas_found:
-                    wait_minutes = random.uniform(2, 6)  # Random wait time between 2 and 6 minutes
+                    print("🎬 Phrase found. Notification loop will now run.")
+                else:
+                    wait_minutes = random.uniform(2, 6)
                     print(f"Sleeping for {wait_minutes:.2f} minutes...\n")
                     time.sleep(wait_minutes * 60)
-
+    except Exception:
+        handle_global_exception(sys.exc_info())
     finally:
-        driver.quit()
+        try:
+            driver.quit()
+        except Exception:
+            pass  # Avoid crash on driver quit
+
+def handle_global_exception(exc_info):
+    print("❌ ERROR OCCURRED:")
+    traceback.print_exception(*exc_info)
+    send_error_notification()
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception:
+        handle_global_exception(sys.exc_info())
