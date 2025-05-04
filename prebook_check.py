@@ -39,20 +39,27 @@ def send_error_notification():
         )
     except:
         pass  # Avoid recursive notification failure
+
 def check_page_for_text(driver):
     try:
-        driver.get(BOOKMYSHOW_URL)
-        time.sleep(8)
         try:
-            page_content = driver.page_source.lower()
+            driver.get(BOOKMYSHOW_URL)
         except Exception as e:
-            # Handle session-related disconnection explicitly
             error_text = str(e).lower()
+            if any(keyword in error_text for keyword in [
+                "internet disconnected", "name not resolved", "connection timed out", "connection reset"
+            ]):
+                print("🌐 Internet issue detected. Retrying in 2 minutes...\n")
+                time.sleep(120)
+                return False
             if any(keyword in error_text for keyword in [
                 "invalid session id", "chrome not reachable", "disconnected", "no such window"
             ]):
                 raise RuntimeError("BROWSER_CLOSED")
+            raise  # Let other exceptions go to the outer handler
 
+        time.sleep(8)
+        page_content = driver.page_source.lower()
 
         check_phrases = [
             "in cinemas", "book tickets", "pre-book tickets",
@@ -71,9 +78,11 @@ def check_page_for_text(driver):
         handle_global_exception(sys.exc_info())
         return False
 
+
 def main():
     driver = None
     in_cinemas_found = False
+    previous_wait = None  # 👈 Add this line
 
     while True:
         try:
@@ -82,33 +91,21 @@ def main():
                 driver = setup_stealth_driver()
 
             if in_cinemas_found:
-                print("🎬 Phrase found. Sending notifications every 7 seconds.")
-                notification_counter = 0
-                while in_cinemas_found:
-                    try:
-                        send_notification()
-                        time.sleep(7)
-                        notification_counter += 1
-
-                        if notification_counter % 5 == 0:
-                            in_cinemas_found = check_page_for_text(driver)
-
-                    except RuntimeError as err:
-                        if str(err) == "BROWSER_CLOSED":
-                            raise
-                        else:
-                            handle_global_exception(sys.exc_info())
-                    except Exception:
-                        handle_global_exception(sys.exc_info())
-
+                ...
             else:
                 in_cinemas_found = check_page_for_text(driver)
                 if in_cinemas_found:
                     print("🎬 Phrase found. Notification loop will now run.")
                 else:
-                    wait_minutes = random.uniform(2, 6)
+                    min_wait, max_wait = 2, 6
+                    while True:
+                        wait_minutes = random.uniform(min_wait, max_wait)
+                        if previous_wait is None or abs(wait_minutes - previous_wait) >= 1.5:
+                            break
+                    previous_wait = wait_minutes
                     print(f"Sleeping for {wait_minutes:.2f} minutes...\n")
                     time.sleep(wait_minutes * 60)
+
 
         except RuntimeError as err:
             if str(err) == "BROWSER_CLOSED":
