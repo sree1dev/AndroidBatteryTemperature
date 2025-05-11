@@ -5,9 +5,17 @@ from plyer import notification
 import traceback
 import sys
 
-BOOKMYSHOW_URL = "https://in.bookmyshow.com/movies/kochi/mission-impossible-the-final-reckoning/ET00419530"
+BOOKMYSHOW_URL = "https://in.bookmyshow.com/movies/cherthala/thudarum/ET00442565"
+
+# Set of phrases to detect on the webpage
+CHECK_PHRASES = {
+    "in cinemas", "book tickets", "pre-book tickets",
+    "pre book tickets", "prebook tickets", "book ticket",
+    "pre-book ticket", "pre book ticket", "prebook ticket"
+}
 
 def setup_stealth_driver():
+    """Initialize and return a stealth Chrome driver."""
     options = uc.ChromeOptions()
     options.headless = False
     options.add_argument("--no-sandbox")
@@ -21,16 +29,18 @@ def setup_stealth_driver():
     return uc.Chrome(options=options)
 
 def send_notification():
+    """Send a desktop notification to the user."""
     try:
         notification.notify(
             title="BOOK TICKET NOW",
-            message="🎬 'In cinemas' found on BookMyShow page.",
+            message="🎬 Booking-related phrase found on BookMyShow!",
             timeout=10
         )
     except Exception:
         handle_global_exception(sys.exc_info())
 
 def send_error_notification():
+    """Send an error notification if something goes wrong."""
     try:
         notification.notify(
             title="❌ ERROR: PLEASE CHECK",
@@ -38,9 +48,10 @@ def send_error_notification():
             timeout=10
         )
     except:
-        pass  # Avoid recursive notification failure
+        pass  # Avoid recursive failure
 
 def check_page_for_text(driver):
+    """Visit the page and check for any of the target phrases."""
     try:
         try:
             driver.get(BOOKMYSHOW_URL)
@@ -56,56 +67,55 @@ def check_page_for_text(driver):
                 "invalid session id", "chrome not reachable", "disconnected", "no such window"
             ]):
                 raise RuntimeError("BROWSER_CLOSED")
-            raise  # Let other exceptions go to the outer handler
+            raise
 
         time.sleep(8)
         page_content = driver.page_source.lower()
 
-        check_phrases = [
-            "in cinemas", "book tickets", "pre-book tickets",
-            "pre book tickets", "prebook tickets", "book ticket",
-            "pre-book ticket", "pre book ticket", "prebook ticket"
-        ]
-        for phrase in check_phrases:
+        for phrase in CHECK_PHRASES:
             if phrase in page_content:
-                print(f"🔔 '{phrase}' found!")
+                print(f"🔔 Phrase '{phrase}' found!")
                 return True
+
         print("No relevant phrase found. Will check again.")
         return False
+
     except RuntimeError:
         raise
     except Exception:
         handle_global_exception(sys.exc_info())
         return False
 
-
 def main():
     driver = None
-    in_cinemas_found = False
-    previous_wait = None  # 👈 Add this line
+    match_found = False
+    previous_wait = None
 
     while True:
         try:
+            if match_found:
+                # Phrase found — Stop detection, run notification loop every 7 seconds
+                send_notification()
+                print("🔔 Notification sent. Waiting 7 seconds...\n")
+                time.sleep(7)
+                continue
+
             if driver is None:
                 print("🚀 Starting new Chrome session...")
                 driver = setup_stealth_driver()
 
-            if in_cinemas_found:
-                ...
-            else:
-                in_cinemas_found = check_page_for_text(driver)
-                if in_cinemas_found:
-                    print("🎬 Phrase found. Notification loop will now run.")
-                else:
-                    min_wait, max_wait = 2, 6
-                    while True:
-                        wait_minutes = random.uniform(min_wait, max_wait)
-                        if previous_wait is None or abs(wait_minutes - previous_wait) >= 1.5:
-                            break
-                    previous_wait = wait_minutes
-                    print(f"Sleeping for {wait_minutes:.2f} minutes...\n")
-                    time.sleep(wait_minutes * 60)
+            match_found = check_page_for_text(driver)
 
+            if not match_found:
+                # Sleep for a randomized interval (2–6 mins), not repeating the same wait
+                min_wait, max_wait = 2, 6
+                while True:
+                    wait_minutes = random.uniform(min_wait, max_wait)
+                    if previous_wait is None or abs(wait_minutes - previous_wait) >= 1.5:
+                        break
+                previous_wait = wait_minutes
+                print(f"Sleeping for {wait_minutes:.2f} minutes...\n")
+                time.sleep(wait_minutes * 60)
 
         except RuntimeError as err:
             if str(err) == "BROWSER_CLOSED":
@@ -116,7 +126,7 @@ def main():
                 except:
                     pass
                 driver = None
-                in_cinemas_found = False
+                match_found = False
                 time.sleep(3)
                 continue
 
@@ -127,9 +137,8 @@ def main():
             except:
                 pass
             driver = None
-            in_cinemas_found = False
+            match_found = False
             time.sleep(5)
-
 
 def handle_global_exception(exc_info):
     print("❌ ERROR OCCURRED:")
